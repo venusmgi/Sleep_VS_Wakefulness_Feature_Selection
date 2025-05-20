@@ -13,6 +13,9 @@ library(gganimate)
 # It's updated to process the output from ConvertMatToCSV.m.
 # For creating a video from generated plots, use Make_Video_From_R_plots.m."
 
+#Note: change the name of Feature_selection_results1.csv and deviance_run1_fold 
+# and histogram_run1_fold for each different run of this function so it will not overwrite the previous images
+
 
 ######## Functions #################
 
@@ -64,7 +67,7 @@ Store_results <- function( results,regression_method,lambda_selection){
   
 }
 
-####################################################################
+##############################MAIN SCRIPT##################################
 
 # Set working directory (change the path as necessary)
 setwd("D:/Venus/Lab projects/NIMBIS/Feature Selection/Sleep_VS_Wakefulness_Feature_Selection")
@@ -96,9 +99,12 @@ raw_data <- raw_data%>%
 # Function for scaling data (choose appropriate scaling function)
 scale = Range_Scale
 
-# Randomly pick 1 value for each metric to create the sleep dataset
+# Prepare data by selecting one entry per patient and scaling features
+
 # (change the seed point to get different results)
-set.seed(123569674)
+set.seed(76456687) # Set seed for reproducibility
+
+# Randomly pick 1 value for each metric to create the sleep dataset
 sleep_data <- raw_data  %>%
   filter(sleep_or_awake== 'sleep',pre_or_post == 'pre') %>%
   group_by(patient_ID ) %>%
@@ -288,13 +294,13 @@ for (i in 1:num_outer_folds){
     plot_annotation(title = paste0('fold number = ',i ))
   
   # Save plot as PNG
-  ggsave(filename = paste0("histogram_run1_fold", i, ".png"), plot =hist_plots, width = 15, height = 10)
+  ggsave(filename = paste0("histogram_run2_fold", i, ".png"), plot =hist_plots, width = 15, height = 10)
   
   
   # Plotting the log of lambda based on the mean deviance (lambda.1se which is mean square error) for each cv
   # Set up the file to save the plots
   # Set up the file to save the plots
-  png(filename = paste0("deviance_run1_fold", i, ".png"), width = 600, height = 400)
+  png(filename = paste0("deviance_run2_fold", i, ".png"), width = 600, height = 400)
   
   # Set up the plotting area
   p1 <-par(mfrow = c(2,2))
@@ -338,7 +344,7 @@ for (i in 1:60){
 
 result_df$num_features <- as.numeric(result_df$num_features)
 # Save to a file
-write.csv(result_df, "Feature_selection_results1.csv", row.names = FALSE)
+write.csv(result_df, "Feature_selection_results2.csv", row.names = FALSE)
 
 # Calculate summary statistics (this is the output you want to look at)
 stats <- result_df %>%
