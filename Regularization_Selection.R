@@ -71,11 +71,14 @@ setwd("D:/Venus/Lab projects/NIMBIS/Feature Selection/Sleep_VS_Wakefulness_Featu
 
 
 ##Read data
-raw_data <- read.csv('allPatinetsMetrics.csv', sep = ",",header = TRUE)
+raw_data <- read.csv('allPatinetsMetrics_Cz.csv', sep = ",",header = TRUE)
+
+#extracting the computational metric names
 feature_metrics <- setdiff(names(raw_data),c('patient_ID', 'file_name', 'sleep_or_awake', 'pre_or_post', 
-                                             'case_or_control', 'epoch_start', 'epoch_stop'))
+                                             'case_or_control', 'epoch_start_index', 'epoch_stop_index','electrod_channel'))
 
 
+#if there is sleep1/sleep2 or wake1/wake2 just replacing them sleep and wake
 raw_data <- raw_data%>%
   mutate(across(sleep_or_awake, ~ gsub('Sleep1|Sleep2','sleep',.)))%>%
   mutate(across(sleep_or_awake, ~ gsub('Wake1|Wake2','wake',.)))
@@ -89,13 +92,13 @@ raw_data <- raw_data%>%
 
 
 
-# Prepare data
+# selecting the scaling method for the data
 scale = Range_Scale
 
-
-set.seed(09487436)
+#randomly picking 1 value for each metric to make the sleep dataset
+set.seed(123569674)
 sleep_data <- raw_data  %>%
-  filter(sleep_or_awake== 'sleep',pre_or_post == 'Pre') %>%
+  filter(sleep_or_awake== 'sleep',pre_or_post == 'pre') %>%
   group_by(patient_ID ) %>%
   slice_sample(n = 1)
 
@@ -139,9 +142,9 @@ sleep_data$scaledSEF = scale(sleep_data$spectral_edge_frequency)
 #           scaledSEF = scale(spectral_edge_frequency))
 # 
 
-
+#randomly picking 1 value for each metric to make the wakefulness dataset
 wake_data <- raw_data %>%
-  filter (sleep_or_awake== 'wake', pre_or_post == 'Pre') %>%
+  filter (sleep_or_awake== 'wake', pre_or_post == 'pre') %>%
   group_by(patient_ID) %>%
   slice_sample(n = 1)
 
@@ -163,7 +166,7 @@ wake_data <- raw_data %>%
 #           scaledSEF = scale(spectral_edge_frequency))
 
 
-
+#scaling the wake dataset
 wake_data$scaledPermEntD = scale(wake_data$permutation_entropy_delta)
 wake_data$scaledShanEntD = scale(wake_data$shannon_entropy_delta)
 wake_data$scaledPermEntT = scale(wake_data$permutation_entropy_theta)
@@ -181,7 +184,7 @@ wake_data$scaledAmp = scale(wake_data$amplitude_range)
 wake_data$scaledSEF = scale(wake_data$spectral_edge_frequency)
 
 
-
+# concatanating sleep and wake data
 my_data <- rbind(sleep_data,wake_data)
 # Ensure no grouping is active
 my_data <- my_data %>% ungroup()
@@ -190,6 +193,8 @@ my_data <- my_data %>% ungroup()
 featuresToUse = c('scaledPermEntD','scaledShanEntD','scaledPermEntT','scaledShanEntT',
                   'scaledPermEntA','scaledShanEntA','scaledPermEntB','scaledShanEntB',
                   'scaledPSDD','scaledPSDT','scaledPSDA','scaledPSDB','scaledPSDBB','scaledAmp','scaledSEF')
+
+#setting up cross validation
 num_outer_folds = 10
 num_patients <- length(unique(my_data$patient_ID))
 fold_size <- ceiling(num_patients/num_outer_folds)
@@ -273,13 +278,13 @@ for (i in 1:num_outer_folds){
   hist_plots <- wrap_plots(plot_lits,ncol = 5)+
     plot_annotation(title = paste0('fold number = ',i ))
   
-  ggsave(filename = paste0("histogram_run5_fold", i, ".png"), plot =hist_plots, width = 15, height = 10)
+  ggsave(filename = paste0("histogram_run1_fold", i, ".png"), plot =hist_plots, width = 15, height = 10)
   
   
   #plotting the log of lambda based on the sqare mean error for each cv
   
   # Set up the file to save the plots
-  png(filename = paste0("deviance_run5_fold", i, ".png"), width = 600, height = 400)
+  png(filename = paste0("deviance_run1_fold", i, ".png"), width = 600, height = 400)
   
   # Set up the plotting area
     
@@ -322,7 +327,7 @@ for (i in 1:60){
 
 result_df$num_features <- as.numeric(result_df$num_features)
 # Save to a file
-write.csv(result_df, "Feature_selection_results5.csv", row.names = FALSE)
+write.csv(result_df, "Feature_selection_results1.csv", row.names = FALSE)
 
 stats <- result_df %>%
   group_by(regression_method,lambda_selection) %>%
